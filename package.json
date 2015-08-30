@@ -1,0 +1,24 @@
+{
+  "name": "hookz",
+  "version": "0.0.1",
+  "description": "Shameless port of the best hooking system I have encountered.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dadish/hookz.git"
+  },
+  "keywords": [
+    "hooks",
+    "events",
+    "flowcontrol"
+  ],
+  "author": "dadish <nurguly.ashyrov@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dadish/hookz/issues"
+  },
+  "homepage": "https://github.com/dadish/hookz#readme"
+}
