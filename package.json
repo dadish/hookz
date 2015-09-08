@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/dadish/hookz/issues"
   },
-  "homepage": "https://github.com/dadish/hookz#readme"
+  "homepage": "https://github.com/dadish/hookz#readme",
+  "devDependencies": {
+    "mocha": "^2.2.5"
+  }
 }
