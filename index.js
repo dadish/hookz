@@ -13,22 +13,39 @@ var slice = Array.prototype.slice;
 //
 //     var object = {};
 //     _.extend(object, Backbone.Events);
-//     object.on('expand', function(){ alert('expanded'); });
+//     object._on('expand', function(){ alert('expanded'); });
 //     object.trigger('expand');
 //
 function Events (prefix) {
   var methodName;
+
+  // Default prefix
+  prefix = prefix || '___';
+  
   for (key in this) {
     if (key.indexOf(prefix) === 0) {
       methodName = key.replace(prefix, '');
-      this[methodName] = function () {
-        if (!this._events) return this;
-        var args = slice.call(arguments, 0);
-        eventsApi(triggerApi, this._events, methodName, void 0, args);
-      }
+      this[methodName] = hookableApi(this, methodName, key);
     }
   }
   _.extend(this, Events);
+}
+
+function hookableApi (obj, methodName, nativeMethodName) {
+  return function () {
+    var args = slice.call(arguments, 0);
+    var a1 = args[0], a2 = args[1], a3 = args[2];
+    var returnVaue;
+    switch (args.length) {
+      case 0: returnValue = obj[nativeMethodName](); break;
+      case 1: returnValue = obj[nativeMethodName](a1); break;
+      case 2: returnValue = obj[nativeMethodName](a1, a2); break;
+      case 3: returnValue = obj[nativeMethodName](a1, a2, a3); break;
+      default: returnValue = obj[nativeMethodName].apply(obj, args);
+    }
+    if (obj._events) eventsApi(triggerApi, obj._events, methodName, void 0, args);
+    return returnValue;
+  }
 }
 
 // Regular expression used to split event strings.
@@ -59,7 +76,7 @@ var eventsApi = function(iteratee, events, name, callback, opts) {
 
 // Bind an event to a `callback` function. Passing `"all"` will bind
 // the callback to all events fired.
-Events.on = function(name, callback, context) {
+Events._on = function(name, callback, context) {
   return internalOn(this, name, callback, context);
 };
 
@@ -79,10 +96,8 @@ var internalOn = function(obj, name, callback, context, listening) {
   return obj;
 };
 
-// Inversion-of-control versions of `on`. Tell *this* object to listen to
-// an event in another object... keeping track of what it's listening to
-// for easier unbinding later.
-Events.listenTo =  function(obj, name, callback) {
+// This is a Backbone listenTo method renamed as `hook`
+Events.addHook =  function(obj, name, callback, context) {
   if (!obj) return this;
   var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
   var listeningTo = this._listeningTo || (this._listeningTo = {});
@@ -95,8 +110,15 @@ Events.listenTo =  function(obj, name, callback) {
     listening = listeningTo[id] = {obj: obj, objId: id, id: thisId, listeningTo: listeningTo, count: 0};
   }
 
+  // context defaults to this 
+  // or callback if provided as third argument
+  if (name && typeof name === 'object') {
+    if (callback !== void 0 && context === void 0) context = callback;
+  }
+  context = context || this;
+  
   // Bind callbacks on obj, and keep track of them on listening.
-  internalOn(obj, name, callback, this, listening);
+  internalOn(obj, name, callback, context, listening);
   return this;
 };
 
@@ -127,11 +149,19 @@ Events.off =  function(name, callback, context) {
 
 // Tell this object to stop listening to either specific events ... or
 // to every object it's currently listening to.
-Events.stopListening =  function(obj, name, callback) {
+Events.removeHook =  function(obj, name, callback, context) {
   var listeningTo = this._listeningTo;
   if (!listeningTo) return this;
 
   var ids = obj ? [obj._listenId] : _.keys(listeningTo);
+
+  // context defaults to this 
+  // or callback if provided as third argument
+  if (name && typeof name === 'object') {
+    if (callback !== void 0 && context === void 0) context = callback;
+  }
+  context = context || this;
+  if (typeof callback !== 'function') callback = void 0;
 
   for (var i = 0; i < ids.length; i++) {
     var listening = listeningTo[ids[i]];
@@ -140,7 +170,7 @@ Events.stopListening =  function(obj, name, callback) {
     // listening to obj. Break out early.
     if (!listening) break;
 
-    listening.obj.off(name, callback, this);
+    listening.obj.off(name, callback, context);
   }
   if (_.isEmpty(listeningTo)) this._listeningTo = void 0;
 
@@ -206,17 +236,25 @@ var offApi = function(events, name, callback, options) {
 // the callback is invoked, its listener will be removed. If multiple events
 // are passed in using the space-separated syntax, the handler will fire
 // once for each event, not once for a combination of all events.
-Events.once =  function(name, callback, context) {
-  // Map the event into a `{event: once}` object.
-  var events = eventsApi(onceMap, {}, name, callback, _.bind(this.off, this));
-  return this.on(events, void 0, context);
-};
+// Events.once =  function(name, callback, context) {
+//   // Map the event into a `{event: once}` object.
+//   var events = eventsApi(onceMap, {}, name, callback, _.bind(this.off, this));
+//   return this._on(events, void 0, context);
+// };
 
 // Inversion-of-control versions of `once`.
-Events.listenToOnce =  function(obj, name, callback) {
+Events.addHookOnce =  function(obj, name, callback, context) {
+
+  // context defaults to this 
+  // or callback if provided as third argument
+  if (name && typeof name === 'object') {
+    if (callback !== void 0 && context === void 0) context = callback;
+  }
+  context = context || this;
+
   // Map the event into a `{event: once}` object.
-  var events = eventsApi(onceMap, {}, name, callback, _.bind(this.stopListening, this, obj));
-  return this.listenTo(obj, events);
+  var events = eventsApi(onceMap, {}, name, callback, _.bind(this.removeHook, this, obj));
+  return this.addHook(obj, events, context);
 };
 
 // Reduces the event callbacks into a map of `{event: onceWrapper}`.

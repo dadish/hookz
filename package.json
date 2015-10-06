@@ -22,6 +22,10 @@
   },
   "homepage": "https://github.com/dadish/hookz#readme",
   "devDependencies": {
-    "mocha": "^2.2.5"
+    "mocha": "^2.3.3",
+    "sinon": "^1.16.1"
+  },
+  "dependencies": {
+    "underscore": "^1.8.3"
   }
 }
