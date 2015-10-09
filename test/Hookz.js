@@ -1,6 +1,7 @@
-var Events = require("../");
+var Hookz = require("../");
+var HookEvent = require('../HookEvent');
 var Assert = require('assert');
-var sinon = require('sinon');
+var _ = require('underscore');
 
 /**
  * Glossary
@@ -16,23 +17,70 @@ var sinon = require('sinon');
 
 describe('Hookz', function () {
   
-  it("returns it's object");
+  it("returns it's object", function () {
+    var hooker = {};
 
-  it("hookMethod is invoked when it's hookableMethod is called");
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
+    };
+    Assert.strictEqual(hooker, Hookz.call(hooker));
+    Assert.strictEqual(hookable, Hookz.call(hookable));
+  });
 
-  it("hookMethod is invoked everytime it's hookableMethod is called");
+  it("hookMethod is called with only one argument, that is a HookEvent object", function () {
+    var hooker = {};
 
-  it("by default hookMethod is called on hookObject");
+    var hookable = {
+      ___a : function () { return this; }
+    };
 
-  it("if provided when hooked, a hookMethod is called on desired object");
+    var callback = function (hookEv) {
+      Assert(hookEv instanceof HookEvent);
+    };
 
-  it("hookMethod is called with only one argument, that is a HookEvent object");
+    Hookz.call(hooker);
+    Hookz.call(hookable);
 
-  it("HookEvent has an `arguments` property which is an Array");
+    hooker.addHook(hookable, 'a', callback);
+    hookable.a();
+  });
 
-  it("HookEvent's `arguments` property contains all arguments passed into hookableMethod when invoked");
+  context("HookEvent's args property", function () {
+    var hooker = {};
 
-  it("All items in HookEvent's `arguments` property could be modified for the next hookMethod in chain");
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    it("HookEvent has an `arguments` property which is an Array", function () {
+      var callback = function (hookEv) {
+        Assert(_.isArray(hookEv.args));
+      };
+      hooker.addHookOnce(hookable, 'a', callback);
+      hookable.a();
+    });
+
+    it("HookEvent's `arguments` property contains all arguments passed into hookableMethod when invoked", function () {
+      var a = 'boo', b = {}, c = 1234; d = new HookEvent();
+      var callback = function (hookEv) {
+        var args = hookEv.args;
+        Assert.strictEqual(args[0], a);
+        Assert.strictEqual(args[1], b);
+        Assert.strictEqual(args[2], c);
+        Assert.strictEqual(args[3], d);
+      }
+      hooker.addHookOnce(hookable, 'a', callback);
+      hookable.a(a, b, c, d);
+    });
+
+    it("All items in HookEvent's `arguments` property could be modified for the next hookMethod in chain", function () {
+      
+    });
+  });
 
   it("HookEvent has an `object` property that references the object to which the hookMethod was attached to");
 

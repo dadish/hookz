@@ -1,6 +1,5 @@
 var Hookz = require("../");
 var Assert = require('assert');
-var sinon = require('sinon');
 var _ = require('underscore');
 
 describe('addHook, addHookOnce, removeHook', function () {
@@ -857,8 +856,8 @@ describe('addHook, addHookOnce, removeHook', function () {
     Hookz.call(hookable);
 
     var callback = function(){ hooker.counter++; };
-    var callbackOn = function(){ hooker.addHook(hookable, 'a', callback); };
-    var callbackOff = function(){ hooker.removeHook(hookable, 'a', callback); };
+    var callbackOn = function(){ hooker.addHook(hookable, 'a all', callback); };
+    var callbackOff = function(){ hooker.removeHook(hookable, 'a all', callback); };
 
     it("a hook that is added during a trigger does not fire until the next trigger", function () {
       hooker.addHook(hookable, 'a', callbackOn);
@@ -868,10 +867,13 @@ describe('addHook, addHookOnce, removeHook', function () {
       // ...
       hookable.a();
       Assert.strictEqual(hooker.counter, 0);
+      hookable.a();
+      Assert.strictEqual(hooker.counter, 8);
     });
 
     it("a hook that is removed during a trigger fires once before it is removed", function () {
       hooker.removeHook();
+      hooker.counter = 0;
       hooker.addHook(hookable, 'a', callbackOff);
       hooker.addHook(hookable, 'a', callback);
       hookable.a();
@@ -1004,165 +1006,320 @@ describe('addHook, addHookOnce, removeHook', function () {
     it("counter should not be incremented", function () {
       hooker.addHook(hookable, 'a', callback, ctx);
       hooker.addHook(hookable, 'a', callback, ctx);
-      console.log(hookable);
-      hooker.removeHook();
+      hooker.removeHook(null, null, ctx);
       hookable.a();
       Assert.strictEqual(hooker.counter, 0);
     });
   });
 
-  it.skip("once", 2, function() {
-    // Same as the previous test, but we use once rather than having to explicitly unbind
-    var obj = { counterA: 0, counterB: 0 };
-    Hookz.call(obj);
-    var incrA = function(){ obj.counterA += 1; obj.trigger('event'); };
-    var incrB = function(){ obj.counterB += 1; };
-    obj.once('event', incrA);
-    obj.once('event', incrB);
-    obj.trigger('event');
-    equal(obj.counterA, 1, 'counterA should have only been incremented once.');
-    equal(obj.counterB, 1, 'counterB should have only been incremented once.');
-  });
+  context("addHookOnce", function() {
 
-  it.skip("once variant one", function() {
-    var f = function(){ ok(true); };
+    var hooker = { 
+      counter1 : 0,
+      counter2 : 0
+      };
 
-    var a = Hookz.call({}).once('event', f);
-    var b = Hookz.call({}).on('event', f);
-
-    a.trigger('event');
-
-    b.trigger('event');
-    b.trigger('event');
-  });
-
-  it.skip("once variant two", function() {
-    var f = function(){ ok(true); };
-    var obj = Hookz.call({});
-
-    obj
-      .once('event', f)
-      .on('event', f)
-      .trigger('event')
-      .trigger('event');
-  });
-
-  it.skip("once with off", function() {
-    var f = function(){ ok(true); };
-    var obj = Hookz.call({});
-
-    obj.once('event', f);
-    obj.off('event', f);
-    obj.trigger('event');
-  });
-
-  it.skip("once with event maps", function() {
-    var obj = { counter: 0 };
-    Hookz.call(obj);
-
-    var increment = function() {
-      this.counter += 1;
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
     };
 
-    obj.once({
-      a: increment,
-      b: increment,
-      c: increment
-    }, obj);
+    var callback1 = function () { hooker.counter1 += 1; hookable.a();};
+    var callback2 = function () { hooker.counter2 += 1;};
+    
+    Hookz.call(hooker);
+    Hookz.call(hookable);
 
-    obj.trigger('a');
-    equal(obj.counter, 1);
-
-    obj.trigger('a b');
-    equal(obj.counter, 2);
-
-    obj.trigger('c');
-    equal(obj.counter, 3);
-
-    obj.trigger('a b c');
-    equal(obj.counter, 3);
+    // Same as the previous test, but we use once rather than having to explicitly unbind    
+    it("counter1 should be 1, counter2 should be 1", function () {
+      hooker.addHookOnce(hookable, 'a', callback1);
+      hooker.addHookOnce(hookable, 'a', callback2);
+      hookable.a().a().a();
+      Assert.strictEqual(hooker.counter1, 1);
+      Assert.strictEqual(hooker.counter2, 1);
+    });
   });
 
-  it.skip("once with off only by context", function() {
-    var context = {};
-    var obj = Hookz.call({});
-    obj.once('event', function(){ ok(false); }, context);
-    obj.off(null, null, context);
-    obj.trigger('event');
+  context("addHookOnce variant one", function() {
+
+    var hooker = { counter : 0 }, ctx = {};
+
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    var callback = function () { hooker.counter += 1;};
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    // var f = function(){ ok(true); };
+    // var a = Hookz.call({}).once('event', f);
+    // var b = Hookz.call({}).on('event', f);
+    hooker.addHookOnce(hookable, 'a', callback);
+    hooker.addHook(hookable, 'a', callback);
+    hookable.a().a().a();
+
+    it("counter should be 4", function () {
+      Assert.strictEqual(hooker.counter, 4);  
+    });
   });
 
-//  it.skip("Backbone object inherits Events", function() {
-//    ok(Backbone.on === Backbone.Events.on);
-//  });
+  context("addHookOnce variant two", function() {
+    var hooker = { counter : 0 }, ctx = {};
 
-  it.skip("once with asynchronous events", function() {
-    var func = _.debounce(function() { ok(true); start(); }, 50);
-    var obj = Hookz.call({}).once('async', func);
+    var hookable = {
+      ___a : function () { return this; }
+    };
 
-    obj.trigger('async');
-    obj.trigger('async');
+    var callback = function () { hooker.counter += 1;};
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    it("counter should be 3", function () {
+      hooker
+        .addHookOnce(hookable, 'a', callback)
+        .addHook(hookable, 'a', callback);
+      hookable.a().a();
+      Assert.strictEqual(hooker.counter, 3);
+    });
   });
 
-  it.skip("once with multiple events.", function() {
-    var obj = Hookz.call({});
-    obj.once('x y', function() { ok(true); });
-    obj.trigger('x y');
+  context("addHookOnce with removeHook", function() {
+    var hooker = { counter : 0 }, ctx = {};
+
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    var callback = function () { hooker.counter += 1;};
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    it("counter should be 0", function () {
+      hooker.addHookOnce(hookable, 'a', callback);
+      hooker.removeHook(hookable, 'a', callback);
+      hookable.a();
+      Assert.strictEqual(hooker.counter, 0);
+    });
   });
 
-  it.skip("Off during iteration with once.", function() {
-    var obj = Hookz.call({});
-    var f = function(){ this.off('event', f); };
-    obj.on('event', f);
-    obj.once('event', function(){});
-    obj.on('event', function(){ ok(true); });
+  context("addHookOnce with hook maps", function() {
+    var hooker = { counter : 0 };
 
-    obj.trigger('event');
-    obj.trigger('event');
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; },
+      ___c : function () { return this; }
+    };
+
+    var callback = function () { hooker.counter += 1;};
+    
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    hooker.addHookOnce(hookable, {
+      a : callback,
+      b : callback,
+      c : callback
+    });
+
+    it("counter should be 1", function () {
+      hookable.a();
+      Assert.strictEqual(hooker.counter, 1);
+    });
+
+    it("counter should be 2", function () {
+      hookable.a().b();
+      Assert.strictEqual(hooker.counter, 2);
+    });
+
+    it("counter should be 3", function () {
+      hookable.c();
+      Assert.strictEqual(hooker.counter, 3);
+    });
+
+    it("counter should be 3", function () {
+      hookable.a().b().c();
+      Assert.strictEqual(hooker.counter, 3);
+    });
   });
 
-//  it.skip("`once` on `all` should work as expected", function() {
-//    Backbone.once('all', function() {
-//      ok(true);
-//      Backbone.trigger('all');
-//    });
-//    Backbone.trigger('all');
-//  });
+  context("addHookOnce with removeHook only by context", function() {
+    var hooker = { counter : 0 };
+    var ctx = {};
 
-  it.skip("once without a callback is a noop", function() {
-    Hookz.call({}).once('event').trigger('event');
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    var callback = function () { hooker.counter += 1;};
+    
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    it("counter should be 0", function () {
+      hooker.addHookOnce(hookable, 'a', callback, ctx);
+      hooker.removeHook(null, null, ctx);
+      hookable.a().a().a();
+      Assert.strictEqual(hooker.counter, 0);
+    });
   });
 
-  it.skip("listenToOnce without a callback is a noop", function() {
-    var obj = Hookz.call({});
-    obj.listenToOnce(obj, 'event').trigger('event');
+  context("addHookOnce with asynchronous events", function() {
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    it("counter should be 1", function (done) {
+      var callback = function () {
+        setTimeout(function () {
+          hooker.counter += 1;
+          if (hooker.counter > 1) throw new Error('This should not be thrown');
+        }, 20);
+      };
+      hooker.addHookOnce(hookable, 'a', callback);
+      hookable.a().a();
+      setTimeout(done, 50);
+    });    
   });
 
-  it.skip("event functions are chainable", function() {
-    var obj = Hookz.call({});
-    var obj2 = Hookz.call({});
-    var fn = function() {};
-    equal(obj, obj.trigger('noeventssetyet'));
-    equal(obj, obj.off('noeventssetyet'));
-    equal(obj, obj.stopListening('noeventssetyet'));
-    equal(obj, obj.on('a', fn));
-    equal(obj, obj.once('c', fn));
-    equal(obj, obj.trigger('a'));
-    equal(obj, obj.listenTo(obj2, 'a', fn));
-    equal(obj, obj.listenToOnce(obj2, 'b', fn));
-    equal(obj, obj.off('a c'));
-    equal(obj, obj.stopListening(obj2, 'a'));
-    equal(obj, obj.stopListening());
+  context("once with multiple events.", function() {
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function () { hooker.counter += 1;};
+
+    it('counter should be 2', function () {
+      hooker.addHookOnce(hookable, 'a b', callback);
+      hookable.a().b().a().b();
+      Assert.strictEqual(hooker.counter, 2);
+    });
   });
 
-  it.skip("#3448 - listenToOnce with space-separated events", function() {
-    var one = Hookz.call({});
-    var two = Hookz.call({});
-    var count = 1;
-    one.listenToOnce(two, 'x y', function(n) { ok(n === count++); });
-    two.trigger('x', 1);
-    two.trigger('x', 1);
-    two.trigger('y', 2);
-    two.trigger('y', 2);
+  context("removeHook during iteration with addHookOnce.", function() {
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function () { hooker.counter += 1; this.removeHook(hookable, 'a', callback); };
+
+    it("counter should be 2", function () {
+      hooker.addHook(hookable, 'a', callback);
+      hooker.addHookOnce(hookable, 'a', callback);
+      hookable.a().a().a().a();      
+      Assert.strictEqual(hooker.counter, 2);
+    });
   });
 
+  context("addHookOnce without a callback is a noop", function() {
+    var hooker = {};
+
+    var hookable = {
+      ___a : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    function callback () {
+      throw new Error("this should not be thrown");
+    }
+
+    it("there should be nothing", function () {
+      hooker.addHookOnce(hookable,'a');
+      hookable.a();
+    });
+  });
+
+  context("event functions are chainable", function() {
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function () { hooker.counter += 1; };
+
+    it("should return itself", function () {
+      Assert.strictEqual(hookable, hookable.a());
+      Assert.strictEqual(hooker, hooker.removeHook(hookable, 'a', callback));
+      Assert.strictEqual(hooker, hooker.removeHook(hookable));
+      Assert.strictEqual(hooker, hooker.removeHook());
+      Assert.strictEqual(hooker, hooker.addHook(hookable, 'a', callback));
+      Assert.strictEqual(hooker, hooker.addHookOnce(hookable, 'b', callback));
+      Assert.strictEqual(hookable, hookable.a());
+      Assert.strictEqual(hooker, hooker.removeHook(hookable, 'a b'));
+    });
+  });
+
+  context("addHookOnce with space-separated hooks", function() {
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function () { hooker.counter += 1; };
+
+    hooker.addHookOnce(hookable, 'a b', callback);
+    
+    it("counter should be 1", function  () {
+      hookable.a().a().a().a();;
+      Assert.strictEqual(hooker.counter, 1);
+    });
+
+    it("counter should be 2", function () {
+      hookable.b().b().a().a().b().b();
+      Assert.strictEqual(hooker.counter, 2);
+    });
+  });
+
+  context("trigger all for each hook", function() {
+    
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function () { hooker.counter += 1; };
+
+    it("counter should be 4", function () {
+      hooker.addHook(hookable, 'all', callback);
+      hookable.a().b().a().b();
+      Assert.strictEqual(hooker.counter, 4);
+    });
+  });
 });

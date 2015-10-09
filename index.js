@@ -1,21 +1,9 @@
+var HookEvent = require('./HookEvent');
 var _ = require('underscore');
 
 // Create a local reference to a common array method we'll want to use later.
 var slice = Array.prototype.slice;
 
-// Backbone.Events
-// ---------------
-
-// A module that can be mixed in to *any object* in order to provide it with
-// a custom event channel. You may bind a callback to an event with `on` or
-// remove with `off`; `trigger`-ing an event fires all callbacks in
-// succession.
-//
-//     var object = {};
-//     _.extend(object, Backbone.Events);
-//     object._on('expand', function(){ alert('expanded'); });
-//     object.trigger('expand');
-//
 function Events (prefix) {
   var methodName;
 
@@ -24,11 +12,13 @@ function Events (prefix) {
   
   for (key in this) {
     if (key.indexOf(prefix) === 0) {
-      methodName = key.replace(prefix, '');
+      methodName = key.slice(prefix.length);
       this[methodName] = hookableApi(this, methodName, key);
     }
   }
   _.extend(this, Events);
+
+  return this;
 }
 
 function hookableApi (obj, methodName, nativeMethodName) {
@@ -43,7 +33,12 @@ function hookableApi (obj, methodName, nativeMethodName) {
       case 3: returnValue = obj[nativeMethodName](a1, a2, a3); break;
       default: returnValue = obj[nativeMethodName].apply(obj, args);
     }
-    if (obj._events) eventsApi(triggerApi, obj._events, methodName, void 0, args);
+    var hookEv = new HookEvent();
+    hookEv.args = args;
+    hookEv.obj = obj;
+    hookEv.replaces = false;
+    hookEv.returns = returnValue;
+    if (obj._events) eventsApi(triggerApi, obj._events, methodName, void 0, hookEv);
     return returnValue;
   }
 }
@@ -96,7 +91,7 @@ var internalOn = function(obj, name, callback, context, listening) {
   return obj;
 };
 
-// This is a Backbone listenTo method renamed as `hook`
+// This is a Backbone listenTo method renamed as `addHook`
 Events.addHook =  function(obj, name, callback, context) {
   if (!obj) return this;
   var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
@@ -157,10 +152,9 @@ Events.removeHook =  function(obj, name, callback, context) {
 
   // context defaults to this 
   // or callback if provided as third argument
-  if (name && typeof name === 'object') {
-    if (callback !== void 0 && context === void 0) context = callback;
-  }
-  context = context || this;
+  if (typeof callback === 'object' && context === void 0) context = callback;
+
+  // callback was not provided if it is not a function
   if (typeof callback !== 'function') callback = void 0;
 
   for (var i = 0; i < ids.length; i++) {
@@ -300,19 +294,9 @@ var triggerApi = function(objEvents, name, cb, args) {
 // A difficult-to-believe, but optimized internal dispatch function for
 // triggering events. Tries to keep the usual cases speedy (most internal
 // Backbone events have 3 arguments).
-var triggerEvents = function(events, args) {
-  var ev, i = -1, l = events.length, a1 = args[0], a2 = args[1], a3 = args[2];
-  switch (args.length) {
-    case 0: while (++i < l) (ev = events[i]).callback.call(ev.ctx); return;
-    case 1: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1); return;
-    case 2: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1, a2); return;
-    case 3: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1, a2, a3); return;
-    default: while (++i < l) (ev = events[i]).callback.apply(ev.ctx, args); return;
-  }
+var triggerEvents = function(events, hookEv) {
+  var ev, i = -1, l = events.length;
+  while (++i < l) (ev = events[i]).callback.call(ev.ctx, hookEv);
 };
-
-// Aliases for backwards compatibility.
-Events.bind   = Events.on;
-Events.unbind = Events.off;
 
 module.exports = Events;
