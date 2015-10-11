@@ -37,9 +37,9 @@ function hookableApi (obj, methodName, nativeMethodName) {
     hookEv.args = args;
     hookEv.obj = obj;
     hookEv.replaces = false;
-    hookEv.returns = returnValue;
+    hookEv.returnValue = returnValue;
     if (obj._events) eventsApi(triggerApi, obj._events, methodName, void 0, hookEv);
-    return returnValue;
+    return hookEv.returnValue;
   }
 }
 
