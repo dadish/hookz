@@ -117,6 +117,8 @@ describe('Hookz', function () {
     hookable.a();
   });
 
+  it("The `obj` property of HookEvent obejct should be immutable");
+
   it("HookEvent has a `returnValue` property that is a value returned by hookableMethod", function () {
     var hooker = {};
 
@@ -176,9 +178,44 @@ describe('Hookz', function () {
 
   it("HookEvent has a `replace` property, which if set to true the hookMethod will be invoked instead of hookableMethod");
 
-  it("Adds a method into an object if the hookableMethod does not exist yet");
+  it("Adds a method into an object if the hookableMethod does not exist yet", function () {
+    var hooker = {};
 
-  it("Methods added via addHook are also hookable");
+    var hookable = {};
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function (hookEv) {
+      hookEv.returnValue = 'zoo';
+    }
+
+    hooker.addHookOnce(hookable, 'a', callback);
+    Assert.strictEqual(hookable.a(), 'zoo');
+  });
+
+  it("Methods added via addHook are also hookable", function () {
+    var hooker = { counter : 0 };
+
+    var hookable = {};
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback1 = function () {
+      hooker.counter += 1;
+    };
+
+    var callback2 = function () {
+      hooker.counter += 1;
+    };
+
+    hooker.addHook(hookable, 'a', callback1);
+    hooker.addHook(hookable, 'a', callback2);
+    hookable.a()
+    Assert.strictEqual(hooker.counter, 2);
+    hooker.removeHook();
+  });
 
   it("cannot hook into methods that are not properly prefixed", function () {
     var hooker = { counter : 0};

@@ -4,15 +4,15 @@ var _ = require('underscore');
 // Create a local reference to a common array method we'll want to use later.
 var slice = Array.prototype.slice;
 
-function Events (prefix) {
+function Events (hookPrefix) {
   var methodName;
 
-  // Default prefix
-  prefix = prefix || '___';
+  // Default hookPrefix
+  this._hookPrefix = hookPrefix || '___';
   
   for (key in this) {
-    if (key.indexOf(prefix) === 0) {
-      methodName = key.slice(prefix.length);
+    if (key.indexOf(this._hookPrefix) === 0) {
+      methodName = key.slice(this._hookPrefix.length);
       this[methodName] = hookableApi(this, methodName, key);
     }
   }
@@ -94,6 +94,7 @@ var internalOn = function(obj, name, callback, context, listening) {
 // This is a Backbone listenTo method renamed as `addHook`
 Events.addHook =  function(obj, name, callback, context) {
   if (!obj) return this;
+
   var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
   var listeningTo = this._listeningTo || (this._listeningTo = {});
   var listening = listeningTo[id];
@@ -120,6 +121,17 @@ Events.addHook =  function(obj, name, callback, context) {
 // The reducing API that adds a callback to the `events` object.
 var onApi = function(events, name, callback, options) {
   if (callback) {
+
+    var obj = options.ctx, prefixedName = obj._hookPrefix + name;
+
+    // If the object does not have a hookableMethod
+    // create one
+    if (typeof obj[prefixedName] !== 'function') {
+      if (obj[name] !== void 0) return events;
+      obj[prefixedName] = function () { return this; };
+      obj[name] = hookableApi(obj, name, prefixedName);
+    }
+
     var handlers = events[name] || (events[name] = []);
     var context = options.context, ctx = options.ctx, listening = options.listening;
     if (listening) listening.count++;
