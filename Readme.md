@@ -39,3 +39,8 @@ hooker.bar();
 - Implement before and after hooks.
 - Remove underscore from dependencies.
 - Create a demo app
+
+### Test
+```bash
+$ npm test
+```
