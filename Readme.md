@@ -39,6 +39,8 @@ hooker.bar();
 - Implement before and after hooks.
 - Remove underscore from dependencies.
 - Create a demo app
+- Update Readme, add API docs
+- Add travis-ci
 
 ### Test
 ```bash
