@@ -20,7 +20,7 @@ var hooker = {
 };
 
 var hookable = {
-  ___bar : functio () {
+  ___bar : function () {
     return 'baz';
   }
 }
