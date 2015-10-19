@@ -1,6 +1,6 @@
 {
   "name": "hookz",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Shameless port of my favorite hooking system I have encountered.",
   "main": "index.js",
   "scripts": {
