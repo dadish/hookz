@@ -179,8 +179,8 @@ $ npm test
 MIT
 
 ### Credits
-[Ryan Cramer][cramer], ProcessWire author
-[Jeremy Ashkenas][ashkenas], Backbone author
+- [Ryan Cramer][cramer], ProcessWire author
+- [Jeremy Ashkenas][ashkenas], Backbone author
 
 [pw]: http://processwire.com
 [pw-api]: http://processwire.com/api/hooks/
