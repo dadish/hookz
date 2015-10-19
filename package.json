@@ -1,7 +1,7 @@
 {
   "name": "hookz",
   "version": "0.0.2",
-  "description": "Shameless port of the best hooking system I have encountered.",
+  "description": "Shameless port of my favorite hooking system I have encountered.",
   "main": "index.js",
   "scripts": {
     "test": "mocha test/"
