@@ -91,7 +91,7 @@ var internalOn = function(obj, name, callback, context, listening) {
   return obj;
 };
 
-// This is a Backbone listenTo method renamed as `addHook`
+// This is a Backbone listenTo method tweaked
 Events.addHook =  function(obj, name, callback, context) {
   if (!obj) return this;
 
