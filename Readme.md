@@ -172,6 +172,7 @@ supports all the syntax style as the __addHook__ method.
 
 ### Test
 ```bash
+$ npm install
 $ npm test
 ```
 
