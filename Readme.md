@@ -1,6 +1,8 @@
 HOOKZ
 =====
 
+[![Build Status](https://travis-ci.org/dadish/hookz.svg?branch=master)](https://travis-ci.org/dadish/hookz)
+
 This one was inspired by my favorite hooking system. The best if you will.
 [Hooks API][pw-api] of the [ProcessWire CMS][pw].
 
