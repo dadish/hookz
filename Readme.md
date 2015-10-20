@@ -176,7 +176,7 @@ $ npm test
 ```
 
 ### License
-MIT
+[MIT][license]
 
 ### Credits
 - [Ryan Cramer][cramer], ProcessWire author
@@ -187,4 +187,4 @@ MIT
 [cramer]: https://github.com/ryancramerdesign/
 [ashkenas]: https://github.com/jashkenas
 [bb-events]: http://backbonejs.org/#Events
-
+[license]: https://raw.githubusercontent.com/dadish/hookz/master/LICENSE
