@@ -23,25 +23,25 @@ $ npm install hookz --save
 ### Usage
 ```js
 var hookz = require('hookz');
-
+ 
 var hooker = {
   foo : function (hookEv) {
     console.log(hookEv.returnValue + ' boo');
   }
 };
-
+ 
 var hookable = {
   ___bar : function () {
     return 'baz';
   }
 }
-
+ 
 hookz.call(hooker);
 hookz.call(hookable);
-
+ 
 hooker.addHook(hookable, 'bar', hooker.foo);
-
-hooker.bar();
+ 
+hookable.bar();
 
 //=> baz boo
 ```
@@ -75,8 +75,8 @@ hookz.call(obj [, prefix]);
 
 __obj__ is an object that you want to turn into a __hookz__ object. Which 
 makes it hookable or being able to add hooks into other hookable objects.
-__prefix__ (optional) The prefix that is used to determine if the method
-is hookable. Default is `___` (three underscores).
+__prefix__ (optional) is used to determine if the method is hookable.
+Default is `___` (three underscores).
 
 > Note: The methods defined after the call on hookz will not be hookable. 
 > First you define your desired object and it's methods, then you call __hookz__
@@ -127,9 +127,7 @@ obj.addHook(obj, {name : function () {}}, context);
 If you want to add hookable methods at the runtime, you can do so with addHook
 method.
 ```js
-obj.addHook(obj, 'someName', function () {
-  console.log('someName method');
-});
+obj.addHook(obj, 'someName', function () {});
 ```
 
 If __obj__ has no method or property called `someName` it gets one and it is also
@@ -193,31 +191,6 @@ obj.addHookOnce(obj, {
 All attached hook callbacks get only one argument. A __HookEvent__ object.
 This object is one of the key concepts of the __hookz__. It allows you to modify
 the behavior of the process on the fly.
-
-##### HookEvent.obj
-You can access the object into which the hook was attached to via `HookEvent.obj`
-property.
-```js
-var hooker = {};
-var hookable = {
-  ___a : function () {}
-};
-
-hookz.call(hooker);
-hookz.call(hookable);
-
-hooker.addHook(hookable, 'a', function (HookEv) {
-  console.log(HookEv.obj === hookable);
-  console.log(this === hooker);
-});
-
-hookable.a();
-//=> true
-//=> true
-
-```
-> Remember? The default context for the callback is the object that attaches
-> the hook.
 
 ##### HookEvent.args
 The __args__ property of the HookEvent contains the arguments that were passed
@@ -290,6 +263,31 @@ console.log(obj.a());
 //=> The world is mine!;
 
 ```
+
+##### HookEvent.obj
+__obj__ is another useful property of __HookEvent__. You can access the object
+into which the hook was attached to via `HookEvent.obj`.
+```js
+var hooker = {};
+var hookable = {
+  ___a : function () {}
+};
+
+hookz.call(hooker);
+hookz.call(hookable);
+
+hooker.addHook(hookable, 'a', function (HookEv) {
+  console.log(HookEv.obj === hookable);
+  console.log(this === hooker);
+});
+
+hookable.a();
+//=> true
+//=> true
+
+```
+> Remember? The default context for the callback is the object that attaches
+> the hook.
 
 ### Coming Soon
 - Before and After hooks.
