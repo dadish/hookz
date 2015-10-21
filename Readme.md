@@ -8,12 +8,11 @@ This one was inspired by my favorite hooking system. The best if you will.
 
 ProcessWire Hooks + Backbone.Events = hookz
 
-What this have to do with the [Backbone.Events][bb-events], you might ask. Well I believe
+What this have to do with the [Backbone.Events][bb-events], you might ask. Well, I believe
 that the code for best hooking system I know should be written by one of the best
-JavaScript coders out there. That's why I used the code for Backbone.Events and
-tweaked it to behave like ProcessWire's Hooks API. I even took all the tests 
-for Backbone.Events for testing this very module. And, of course, I added some 
-more.
+JavaScript coders I am aware of. So I took the code for Backbone.Events and 
+tweaked it to behave like ProcessWire's Hooks API. I even took all the tests for
+Backbone.Events for testing this very module. And, of course, I added some more.
 
 ### Install
 Install with npm
@@ -135,7 +134,7 @@ obj.addHook(obj, 'someName', function () {
 });
 ```
 
-If __obj__ has no method or property called 'someName' it gets one and it is also
+If __obj__ has no method or property called `someName` it gets one and it is also
 hookable.
 
 #### removeHook
@@ -164,16 +163,148 @@ obj.removeHook(null, null, context);
 #### addHookOnce
 You can attach a hook so it fires just once with __addHookOnce__. This one 
 supports all the syntax style as the __addHook__ method.
+```js
+var counter = 0;
+var obj = {
+  ___a : function () { return this; }
+};
 
-### RoadMap
-- Implement before and after hooks.
+hookz.call(obj);
+
+obj.addHookOnce(obj, 'a', function () {
+  counter += 1;
+});
+
+obj.a().a().a().a();
+
+console.log('counter is: ' + counter);
+//=> counter is 1
+```
+
+You can also use map syntax with __addHookOnce__
+```js
+obj.addHookOnce(obj, {
+  a : function () {},
+  b : function () {}
+});
+
+// Each calback will be invoked once
+```
+
+#### HookEvent
+All attached hook callbacks get only one argument. A __HookEvent__ object.
+This object is one of the key concepts of the __hookz__. It allows you to modify
+the behavior of the process on the fly.
+
+##### HookEvent.obj
+You can access the object into which the hook was attached to via `HookEvent.obj`
+property.
+```js
+var hooker = {};
+var hookable = {
+  ___a : function () {}
+};
+
+hookz.call(hooker);
+hookz.call(hookable);
+
+hooker.addHook(hookable, 'a', function (HookEv) {
+  console.log(HookEv.obj === hookable);
+  console.log(this === hooker);
+});
+
+hookable.a();
+//=> true
+//=> true
+
+```
+> Note that the default context for the callback is the object that attaches
+> the hook.
+
+##### HookEvent.args
+The __args__ property of the HookEvent contains the arguments that were passed
+into hookable method when invoked.
+```js
+obj.addHook(obj, 'a', function (HookEvent) {
+  console.log(HookEvent.args[0]);
+});
+
+obj.a('foo');
+//=> foo
+```
+
+You can modify the arguments for the next hooks in the chain that were attached
+into the same hookable method.
+```js
+obj.addHook(obj, 'a', function (HookEv) {
+  console.log('callback1: ' + HookEv.args[0]);
+  HookEv.args[0] = 'bar';
+});
+
+obj.addHook(obj, 'a', function (HookEv) {
+  console.log('callback2: ' + HookEv.args[0]);
+});
+
+obj.a('foo');
+
+//=> callback1: foo
+//=> callback2: bar
+```
+
+> With the before hooks (_that are coming soon_) you will be able to modify the
+> arguments of the hookable method before it is invoked.
+
+##### HookEvent.returnValue
+Another useful property that __HookEvent__ has is a __returnValue__ property.
+Now you can access the value returned by hookable method within all hooks that
+were attached to it.
+```js
+var obj = {
+  ___a : function () { return 'foo'; }
+};
+
+hookz.call(obj);
+
+obj.addHook(obj, 'a', function (HookEv) {
+  console.log('obj.a returns ' + HookEv.returnValue);
+});
+
+obj.a();
+
+//=> obj.a returns foo
+```
+
+Even more, you can change the returned value of the hookable method with the
+attached hook.
+```js
+var obj = {
+  ___a : function () { return 'The world is'; }
+};
+
+hookz.call(obj);
+
+obj.addHook(obj, 'a', function (HookEv) {
+  HookEv.returnValue += ' mine!';
+});
+
+console.log(obj.a());
+
+//=> The world is mine!;
+
+```
+
+### Coming Soon
+- Before and After hooks.
 - Remove underscore from dependencies.
-- Create a demo app
-- Update Readme, add API docs
-- Add travis-ci
+- A demo app
+- Thorough API docs
 
 ### Test
+The test files are not included into the npm package. You need to clone the
+repo to your machine.
 ```bash
+$ git clone https://github.com/dadish/hookz.git
+$ cd hookz
 $ npm install
 $ npm test
 ```
