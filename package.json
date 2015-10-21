@@ -6,6 +6,10 @@
   "scripts": {
     "test": "mocha test/"
   },
+  "files": [
+    "index.js",
+    "HookEvent.js"
+  ],
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/dadish/hookz.git"
