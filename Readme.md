@@ -51,8 +51,6 @@ hooker.bar();
 To make a JavaScript object hookable and/or hooker (being able to hook) you call
 __hookz__ on it. All methods that are properly prefixed will be hookable. Then you
 call the hookable methods without the prefix and trigger all attached hook methods. 
-
-##### Example
 ```js
 var obj = {
   ___a : function () {}
@@ -70,12 +68,12 @@ it, then you call the method with the prefix. Like this...
 obj.___a(); // This will not trigger any attached hooks
 ```
 
-##### Syntax
+The syntax is:
 ```js
 hookz.call(obj [, prefix]);
 ```
 
-__obj__ is an object that you want to turn into a hookz object. Which 
+__obj__ is an object that you want to turn into a __hookz__ object. Which 
 makes it hookable or being able to add hooks into other hookable objects.
 __prefix__ (optional) The prefix that is used to determine if the method
 is hookable. Default is `___` (three underscores).
@@ -86,8 +84,7 @@ is hookable. Default is `___` (three underscores).
 > that with addHook method, see below.
 
 #### addHook
-Adds a hook on a hookable method. Every __hookz__ object has an _addHook_ method.
-##### Example
+Adds a hook on a hookable method. Every __hookz__ object has an __addHook__ method.
 ```js
 obj.addHook(obj, 'a', function () {
   console.log('The world is mine!');
@@ -96,7 +93,8 @@ obj.addHook(obj, 'a', function () {
 obj.a();
 // => The world is mine!
 ```
-##### Syntax
+
+The syntax is:
 ```js
 obj.addHook(obj, methodName, callback [, context]);
 ```
@@ -105,7 +103,7 @@ __obj__ is a hookable object. __methodName__ is a name of the method that you
 want to attach hooks into. __callback__ is a function to be called. __context__
 is a context for the callback. Defaults to the object that attaches a hook.
 
-You can provide multiple names at once to attach a method to several hookable
+You can provide multiple names at once to attach a hook to several hookable
 methods. The names should be seperated with space.
 ```js
 obj.addHook(obj, 'name1 name2 name3', function () {});
@@ -140,7 +138,7 @@ hookable.
 #### removeHook
 You can remove the hooks that you have attached with __removeHook__ method.
 
-##### Syntax
+The syntax is:
 ```js
 obj.removeHook([obj] [, name] [, callback] [, context]);
 ```
@@ -218,7 +216,7 @@ hookable.a();
 //=> true
 
 ```
-> Note that the default context for the callback is the object that attaches
+> Remember? The default context for the callback is the object that attaches
 > the hook.
 
 ##### HookEvent.args
