@@ -187,6 +187,17 @@ obj.addHookOnce(obj, {
 // Each calback will be invoked once
 ```
 
+#### AddHookBefore & AddHookAfter
+If you need a specific hook to run after or before the hookable method, then
+you can use __addHookAfter__ and __addHookBefore__ methods.
+```js
+obj.addHookBefore(obj, 'a', function () {
+  console.log('the `a` method is about to run');
+});
+```
+Both __addHookAfter__ and __addHookBefore__ support all the syntactic sugar that
+the __addHook__ method does.
+
 #### HookEvent
 All attached hook callbacks get only one argument. A __HookEvent__ object.
 This object is one of the key concepts of the __hookz__. It allows you to modify
@@ -222,8 +233,25 @@ obj.a('foo');
 //=> callback2: bar
 ```
 
-> With the before hooks (_that are coming soon_) you will be able to modify the
-> arguments of the hookable method before it is invoked.
+With the before hooks are be able to modify the arguments of the hookable
+method before it is invoked.
+```js
+var obj = {
+  ___a : function (arg) {
+    console.log(arg);
+  }
+};
+
+hookz.call(obj);
+
+obj.addHookBefore(obj, 'a', function (hookEv) {
+  hookEv.args[0] = 'bar';
+});
+
+obj.a('foo');
+
+//=> bar
+```
 
 ##### HookEvent.returnValue
 Another useful property that __HookEvent__ has is a __returnValue__ property.
@@ -236,7 +264,7 @@ var obj = {
 
 hookz.call(obj);
 
-obj.addHook(obj, 'a', function (HookEv) {
+obj.addHookAfter(obj, 'a', function (HookEv) {
   console.log('obj.a returns ' + HookEv.returnValue);
 });
 
@@ -254,7 +282,7 @@ var obj = {
 
 hookz.call(obj);
 
-obj.addHook(obj, 'a', function (HookEv) {
+obj.addHookAfter(obj, 'a', function (HookEv) {
   HookEv.returnValue += ' mine!';
 });
 
@@ -290,7 +318,7 @@ hookable.a();
 > the hook.
 
 ### Coming Soon
-- Before and After hooks.
+- Replace hooks.
 - Remove underscore from dependencies.
 - A demo app
 - Thorough API docs
