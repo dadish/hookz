@@ -154,7 +154,7 @@ Events.addHookBefore = function(obj, name, callback, context) {
   if (name && typeof name === 'object') {
     // Handle event maps.
     for (names = _.keys(name); i < names.length ; i++) {
-      this.addHook(obj, 'before:' + names[i], name[names[i]], callback || context);
+      this.addHook(obj, 'before:' + names[i], name[names[i]], context || callback);
     }
   } else if (name && eventSplitter.test(name)) {
     // Handle space separated event names by delegating them individually.
@@ -173,7 +173,7 @@ Events.addHookAfter = function(obj, name, callback, context) {
   if (name && typeof name === 'object') {
     // Handle event maps.
     for (names = _.keys(name); i < names.length ; i++) {
-      this.addHook(obj, 'after:' + names[i], name[names[i]], callback || context);
+      this.addHook(obj, 'after:' + names[i], name[names[i]], context || callback);
     }
   } else if (name && eventSplitter.test(name)) {
     // Handle space separated event names by delegating them individually.
