@@ -13,7 +13,7 @@ function Events (hookPrefix) {
   for (key in this) {
     if (key.indexOf(this._hookPrefix) === 0) {
       methodName = key.slice(this._hookPrefix.length);
-      this[methodName] = hookableApi(this, methodName, key);
+      this[methodName] = hookzApi(this, methodName, key);
     }
   }
   _.extend(this, Events);
@@ -21,7 +21,7 @@ function Events (hookPrefix) {
   return this;
 }
 
-function hookableApi (obj, methodName, nativeMethodName) {
+function hookzApi (obj, methodName, nativeMethodName) {
   return function () {
     var args, returnVaue, hookEv, a1, a2, a3;
 
@@ -137,7 +137,7 @@ var onApi = function(events, name, callback, options) {
     if (typeof obj[prefixedName] !== 'function') {
       if (obj[name] !== void 0) return events;
       obj[prefixedName] = function () { return this; };
-      obj[name] = hookableApi(obj, name, prefixedName);
+      obj[name] = hookzApi(obj, name, prefixedName);
     }
 
     var handlers = events[name] || (events[name] = []);
