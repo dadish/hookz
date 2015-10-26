@@ -22,37 +22,58 @@ function Events (hookPrefix) {
 }
 
 function hookzApi (obj, methodName, nativeMethodName) {
-  return function () {
-    var args, returnVaue, hookEv, a1, a2, a3;
 
+  var methodNameBefore, methodNameAfter, methodNameBeforeAll, methodNameAfterAll, methodNameAll;
+
+  methodNameBefore = 'before:' + methodName;
+  methodNameBeforeAll = 'before:all';
+  methodNameAfter = 'after:' + methodName;
+  methodNameAfterAll = 'after:all';
+  methodNameAll = 'all';
+
+  return function () {
+    var args, returnVaue, hookEv, a1, a2, a3, hooks, hooksNow, 
+        hooksAfter, hooksBefore, hooksNowAll, hooksBeforeAll, hooksAfterAll;
+
+    // Get the copy of the before, now and after hooks
+    // we trigger the copies of them because the callback
+    // list could be modified during the trigger, but we
+    // need to trigger only those that were attached before
+    // thir trigger event
+    if (obj._events) {
+      hooks = obj._events;
+      hooksNow = (hooks[methodName]) ? hooks[methodName].slice() : false;
+      hooksNowAll = (hooks[methodNameAll]) ? hooks[methodNameAll].slice() : false;
+      
+      hooksBefore = (hooks[methodNameBefore]) ? hooks[methodNameBefore].slice() : false;
+      hooksBeforeAll = (hooks[methodNameBeforeAll]) ? hooks[methodNameBeforeAll].slice() : false;
+
+      hooksAfter = (hooks[methodNameAfter]) ? hooks[methodNameAfter].slice() : false;
+      hooksAfterAll = (hooks[methodNameAfterAll]) ? hooks[methodNameAfterAll].slice() : false;    
+    }
+
+    // Prepare the HookEvent object
     hookEv = new HookEvent();
     hookEv.args = slice.call(arguments, 0);
     hookEv.obj = obj;
     hookEv.replaces = false;
     hookEv.methodName = methodName;
-    if (obj._events) triggerApi(obj._events, 'before:' + methodName, void 0, hookEv, 'before:');
 
-    // Optimize the method call
-    args = hookEv.args;
-    a1 = args[0], a2 = args[1], a3 = args[2];
-    switch (args.length) {
-      case 0: returnValue = obj[nativeMethodName](); break;
-      case 1: returnValue = obj[nativeMethodName](a1); break;
-      case 2: returnValue = obj[nativeMethodName](a1, a2); break;
-      case 3: returnValue = obj[nativeMethodName](a1, a2, a3); break;
-      default: returnValue = obj[nativeMethodName].apply(obj, args);
-    }
+    // Trigger the before hooks
+    if (hooksBefore) triggerEvents(hooksBefore, hookEv);
+    if (hooksBeforeAll) triggerEvents(hooksBeforeAll, hookEv);
 
-    // Get the returned value from the hookable method
-    hookEv.returnValue = returnValue;
+    // Call the native method and get the returned value
+    hookEv.returnValue = obj[nativeMethodName].apply(obj, hookEv.args);
 
-    if (obj._events) {
-      // Trigger addHook hooks
-      triggerApi(obj._events, methodName, void 0, hookEv, '');
+    // Trigger the now hooks
+    if (hooksNow) triggerEvents(hooksNow, hookEv);
+    if (hooksNowAll) triggerEvents(hooksNowAll, hookEv);
 
-      // Trigger addHookAfter hooks
-      triggerApi(obj._events, 'after:' + methodName, void 0, hookEv, 'after:');
-    }
+    // Trigger the after hooks
+    if (hooksAfter) triggerEvents(hooksAfter, hookEv);
+    if (hooksAfterAll) triggerEvents(hooksAfterAll, hookEv);
+
     return hookEv.returnValue;
   }
 }
@@ -310,18 +331,6 @@ var onceMap = function(map, name, callback, offer) {
     once._callback = callback;
   }
   return map;
-};
-
-// Handles triggering the appropriate event callbacks.
-var triggerApi = function(objEvents, name, cb, hookEv, when) {
-  if (objEvents) {
-    var events = objEvents[name];
-    var allEvents = objEvents[when + 'all'];
-    if (events && allEvents) allEvents = allEvents.slice();
-    if (events) triggerEvents(events, hookEv);
-    if (allEvents) triggerEvents(allEvents, [name].concat(hookEv));
-  }
-  return objEvents;
 };
 
 // A difficult-to-believe, but optimized internal dispatch function for
