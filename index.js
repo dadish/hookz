@@ -23,9 +23,18 @@ function Events (hookPrefix) {
 
 function hookableApi (obj, methodName, nativeMethodName) {
   return function () {
-    var args = slice.call(arguments, 0);
-    var a1 = args[0], a2 = args[1], a3 = args[2];
-    var returnVaue;
+    var args, returnVaue, hookEv, a1, a2, a3;
+
+    hookEv = new HookEvent();
+    hookEv.args = slice.call(arguments, 0);
+    hookEv.obj = obj;
+    hookEv.replaces = false;
+    hookEv.methodName = methodName;
+    if (obj._events) triggerApi(obj._events, 'before:' + methodName, void 0, hookEv, 'before:');
+
+    // Optimize the method call
+    args = hookEv.args;
+    a1 = args[0], a2 = args[1], a3 = args[2];
     switch (args.length) {
       case 0: returnValue = obj[nativeMethodName](); break;
       case 1: returnValue = obj[nativeMethodName](a1); break;
@@ -33,12 +42,17 @@ function hookableApi (obj, methodName, nativeMethodName) {
       case 3: returnValue = obj[nativeMethodName](a1, a2, a3); break;
       default: returnValue = obj[nativeMethodName].apply(obj, args);
     }
-    var hookEv = new HookEvent();
-    hookEv.args = args;
-    hookEv.obj = obj;
-    hookEv.replaces = false;
+
+    // Get the returned value from the hookable method
     hookEv.returnValue = returnValue;
-    if (obj._events) eventsApi(triggerApi, obj._events, methodName, void 0, hookEv);
+
+    if (obj._events) {
+      // Trigger addHook hooks
+      triggerApi(obj._events, methodName, void 0, hookEv, '');
+
+      // Trigger addHookAfter hooks
+      triggerApi(obj._events, 'after:' + methodName, void 0, hookEv, 'after:');
+    }
     return hookEv.returnValue;
   }
 }
@@ -67,12 +81,6 @@ var eventsApi = function(iteratee, events, name, callback, opts) {
     events = iteratee(events, name, callback, opts);
   }
   return events;
-};
-
-// Bind an event to a `callback` function. Passing `"all"` will bind
-// the callback to all events fired.
-Events._on = function(name, callback, context) {
-  return internalOn(this, name, callback, context);
 };
 
 // Guard the `listening` argument from the public API.
@@ -141,11 +149,49 @@ var onApi = function(events, name, callback, options) {
   return events;
 };
 
+Events.addHookBefore = function(obj, name, callback, context) {
+  var i = 0, names;
+  if (name && typeof name === 'object') {
+    // Handle event maps.
+    for (names = _.keys(name); i < names.length ; i++) {
+      this.addHook(obj, 'before:' + names[i], name[names[i]], callback || context);
+    }
+  } else if (name && eventSplitter.test(name)) {
+    // Handle space separated event names by delegating them individually.
+    for (names = name.split(eventSplitter); i < names.length; i++) {
+      this.addHook(obj, 'before:' + names[i], callback, context);
+    }
+  } else {
+    // Finally, standard events.
+    this.addHook(obj, name, callback, context);
+  }
+  return this;
+};
+
+Events.addHookAfter = function(obj, name, callback, context) {
+  var i = 0, names;
+  if (name && typeof name === 'object') {
+    // Handle event maps.
+    for (names = _.keys(name); i < names.length ; i++) {
+      this.addHook(obj, 'after:' + names[i], name[names[i]], callback || context);
+    }
+  } else if (name && eventSplitter.test(name)) {
+    // Handle space separated event names by delegating them individually.
+    for (names = name.split(eventSplitter); i < names.length; i++) {
+      this.addHook(obj, 'after:' + names[i], callback, context);
+    }
+  } else {
+    // Finally, standard events.
+    this.addHook(obj, name, callback, context);
+  }
+  return this;
+};
+
 // Remove one or many callbacks. If `context` is null, removes all
 // callbacks with that function. If `callback` is null, removes all
 // callbacks for the event. If `name` is null, removes all bound
 // callbacks for all events.
-Events.off =  function(name, callback, context) {
+var off =  function(name, callback, context) {
   if (!this._events) return this;
   this._events = eventsApi(offApi, this._events, name, callback, {
       context: context,
@@ -176,7 +222,7 @@ Events.removeHook =  function(obj, name, callback, context) {
     // listening to obj. Break out early.
     if (!listening) break;
 
-    listening.obj.off(name, callback, context);
+    off.call(listening.obj, name, callback, context);
   }
   if (_.isEmpty(listeningTo)) this._listeningTo = void 0;
 
@@ -238,16 +284,6 @@ var offApi = function(events, name, callback, options) {
   if (_.size(events)) return events;
 };
 
-// Bind an event to only be triggered a single time. After the first time
-// the callback is invoked, its listener will be removed. If multiple events
-// are passed in using the space-separated syntax, the handler will fire
-// once for each event, not once for a combination of all events.
-// Events.once =  function(name, callback, context) {
-//   // Map the event into a `{event: once}` object.
-//   var events = eventsApi(onceMap, {}, name, callback, _.bind(this.off, this));
-//   return this._on(events, void 0, context);
-// };
-
 // Inversion-of-control versions of `once`.
 Events.addHookOnce =  function(obj, name, callback, context) {
 
@@ -276,29 +312,14 @@ var onceMap = function(map, name, callback, offer) {
   return map;
 };
 
-// Trigger one or many events, firing all bound callbacks. Callbacks are
-// passed the same arguments as `trigger` is, apart from the event name
-// (unless you're listening on `"all"`, which will cause your callback to
-// receive the true name of the event as the first argument).
-Events.trigger =  function(name) {
-  if (!this._events) return this;
-
-  var length = Math.max(0, arguments.length - 1);
-  var args = Array(length);
-  for (var i = 0; i < length; i++) args[i] = arguments[i + 1];
-
-  eventsApi(triggerApi, this._events, name, void 0, args);
-  return this;
-};
-
 // Handles triggering the appropriate event callbacks.
-var triggerApi = function(objEvents, name, cb, args) {
+var triggerApi = function(objEvents, name, cb, hookEv, when) {
   if (objEvents) {
     var events = objEvents[name];
-    var allEvents = objEvents.all;
+    var allEvents = objEvents[when + 'all'];
     if (events && allEvents) allEvents = allEvents.slice();
-    if (events) triggerEvents(events, args);
-    if (allEvents) triggerEvents(allEvents, [name].concat(args));
+    if (events) triggerEvents(events, hookEv);
+    if (allEvents) triggerEvents(allEvents, [name].concat(hookEv));
   }
   return objEvents;
 };
