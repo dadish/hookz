@@ -237,4 +237,48 @@ describe('Hookz', function () {
     Assert.strictEqual(hooker.counter, 2);
   });
 
+  context("context", function () {
+    
+    var hookable = {
+      counter : 0, 
+      ___hookableMethod : function () {
+        this.counter += 1;
+        Assert.strictEqual(this, hookable);
+        return this;
+      }
+    };
+
+    Hookz.call(hookable);    
+
+    it("the context of the hookable methods should be the hookable object", function () {
+      hookable.hookableMethod().hookableMethod();
+      Assert.strictEqual(hookable.counter, 2);  
+    });
+  });
+
+  context("hook functions are chainable", function() {
+    var hooker = { counter : 0 };
+
+    var hookable = {
+      ___a : function () { return this; },
+      ___b : function () { return this; }
+    };
+
+    Hookz.call(hooker);
+    Hookz.call(hookable);
+
+    var callback = function () { hooker.counter += 1; };
+
+    it("should return itself", function () {
+      Assert.strictEqual(hookable, hookable.a());
+      Assert.strictEqual(hooker, hooker.removeHook(hookable, 'a', callback));
+      Assert.strictEqual(hooker, hooker.removeHook(hookable));
+      Assert.strictEqual(hooker, hooker.removeHook());
+      Assert.strictEqual(hooker, hooker.addHook(hookable, 'a', callback));
+      Assert.strictEqual(hooker, hooker.addHookOnce(hookable, 'b', callback));
+      Assert.strictEqual(hookable, hookable.a());
+      Assert.strictEqual(hooker, hooker.removeHook(hookable, 'a b'));
+    });
+  });
+
 });
